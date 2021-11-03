@@ -85,4 +85,4 @@ class MyClient(discord.Client):
         await message.reply(splitcom)
 
 client = MyClient()
-client.run("ODk5NzMyMDY0NTE2MDU1MTIw.YW3CyA.mw0tWK_XZ11JLV2JVKD8_j3eqd0")
+client.run(input("Bot-token: "))
