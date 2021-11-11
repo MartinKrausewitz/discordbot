@@ -48,9 +48,6 @@ class ReaderWriter():
                     i = i + 1
                 wr = wr + "}\n"
                 file.write(wr)
-                print(id)
-                print(val)
-                print(wr)
                 j = j +1;
 
 class Users():
@@ -63,6 +60,7 @@ class Users():
         self.getusers()
     def adduser(self, id, pmlevel):
         self.rw.appendfile([self.stdva],[[str(id), str(pmlevel)]])
+        self.getusers()
     def deluser(self, id):
         beg = self.rw.readfile(self.stdva)
         end =  []
@@ -72,20 +70,20 @@ class Users():
         self.rw.deletefile()
         for x in end:
             self.rw.appendfile(self.stdva, [x])
+        self.getusers()
 
         #print(self.allusers)
     def getusers(self):
         self.allusers = self.rw.readfile(self.stdva)
-        print(self.allusers)
+        #print(self.allusers)
     def checkpm(self, id, reqlevel):
         pm = 0
         reqlevel = int(reqlevel)
         for a in self.allusers:
-            print((a[0], id))
             if a[0] == str(id):
                 pm = int(a[1])
                 break
-        print((pm, reqlevel, pm >= reqlevel))
+        #print((pm, reqlevel, pm >= reqlevel))
         if pm >= reqlevel:
             return True
         else:
@@ -106,18 +104,21 @@ class Jokes():
             for x in self.jokes:
                 for b in self.jokes:
                     print((b[0],tid))
-                    if(b[0] == tid):
+                    if(int(b[0]) == tid):
                         tid += 1
         self.rw.appendfile([self.stdva], [[str(tid), jo]])
+        self.update()
         return tid
     def remjoke(self,id):
-        beg = self.rw.readfile()
+        beg = self.rw.readfile(self.stdva)
         end = []
         for x in beg:
-            if(x[0] != id):
+            if(int(x[0]) != id):
                 end.append(x)
+        self.rw.deletefile()
         for x in end:
             self.rw.writefile([self.stdva], [x])
+        self.update()
     def telljoke(self, jid = "-1"):
         tid = 0
         for x in self.jokes:
@@ -128,7 +129,7 @@ class Jokes():
         else:
             resid = jid
         for x in self.jokes:
-            if(x[0] == resid):
+            if(int(x[0]) == resid):
                 return (x[1],resid)
         if(self.jokes == [] or jid != -1):
             return -1
@@ -137,6 +138,7 @@ class Jokes():
 
     def update(self):
         self.jokes = self.rw.readfile(self.stdva)
+        #print(self.jokes)
 class wisdom():
     def __init__(self):
         pass
@@ -151,6 +153,13 @@ class MyClient(discord.Client):
         if message.author == client.user:
             return
         print("From " + str(message.author.id) + " with " + str(message.content))
+        if "arrrrr" in message.content.lower():
+            ret = self.jok.telljoke(-1)
+            # print(ret)
+            if ret == -1:
+                await message.reply("Index not forgiven or no item in list!")
+            else:
+                await message.reply(ret[0] + " (" + str(ret[1]) + ")")
         if not message.content.startswith("!"):
             return
         #await message.reply("Valid Command")
@@ -187,38 +196,54 @@ class MyClient(discord.Client):
         #Commands for joke class
         if(splitcom[0] == "joke"):
             if splitcom[1] == "tell":
-                if not self.us.checkpm(message.author.id, 10):
-                    await message.reply("No permission")
-                    return
                 if(len(splitcom) <3):
                     tid = -1
                 else:
                     tid = splitcom[2]
                 ret = self.jok.telljoke(tid)
-                print(ret)
+                #print(ret)
                 if ret == -1:
                     await message.reply("Index not forgiven or no item in list!")
                 else:
-                    await message.reply(ret[0]+ " ("+ret[1]+")")
+                    await message.reply(ret[0]+ " ("+ str(ret[1]) +")")
             if splitcom[1] == "add":
+                jokfilter = False
                 if not self.us.checkpm(message.author.id, 10):
-                    await message.reply("No permission")
-                    return
+                    if self.us.checkpm(message.author.id, 3):
+                        jokfilter = True
+                    else:
+                        await message.reply("No permission")
+                        return
                 j = ""
                 for i in range(2, len(splitcom)):
                     j = j + splitcom[i]
                     if(i < len(splitcom)-1):
                         j = j + " "
+                j.replace('"', '')
+                if jokfilter:
+                    j.replace("/" , "")
+                    j.replace("\\", "")
+                    j.replace(";", "")
                 zid = self.jok.addjoke(j)
                 await message.reply("Your Joke has been added. The id is: " + str(zid))
             if splitcom[1] == "del":
                 if not self.us.checkpm(message.author.id, 10):
                     await message.reply("No permission")
                     return
-                pass
+                try:
+                    splitcom[2] = int(splitcom[2])
+                except ValueError:
+                    await message.reply("Invalid Argument")
+                self.jok.remjoke(splitcom[2])
+            if splitcom[1] == "update":
+                if not self.us.checkpm(message.author.id, 2):
+                    await message.reply("No permission")
+                    return
+                self.jok.update()
         if(splitcom[0] == "server"):
             if(splitcom[1]=="members"):
                 await message.reply(message.guild.members)
+
         #await message.reply(splitcom)
 
 
